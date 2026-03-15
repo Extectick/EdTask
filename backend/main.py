@@ -14,9 +14,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://bfdc-176-221-197-123.ngrok-free.app",
         "http://localhost:5173",
         "http://127.0.0.1:8000",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -30,6 +30,9 @@ for router in all_routers:
 
 # Раздача изображений
 app.mount("/data/img", StaticFiles(directory="data/img"), name="data_img")
+
+# Раздача файлов
+app.mount("/data/files", StaticFiles(directory="data/files"), name="data_files")
 
 # Раздача статики фронтенда (в конце!)
 static_path = os.path.join(os.path.dirname(__file__), "static")

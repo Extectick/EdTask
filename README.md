@@ -61,8 +61,8 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 **Открой:**
-- Локально: `http://127.0.0.1:8000`
-- Ngrok: `https://bfdc-176-221-197-123.ngrok-free.app`
+- Frontend: `http://localhost:5173`
+- Backend API: `http://127.0.0.1:8000`
 
 Смотри [DEPLOY.md](DEPLOY.md) для подробностей.
 

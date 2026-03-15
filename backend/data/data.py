@@ -1,137 +1,107 @@
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import String, ForeignKey, Integer, Boolean, DateTime, func, select
+from sqlalchemy import String, ForeignKey, Integer, Boolean, DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy import create_engine
-
-class Base(DeclarativeBase):
-    pass
 
 
 engine = create_engine("sqlite:///data/base.db", echo=False)
 Session = sessionmaker(bind=engine)
 
 
-class MasterUser(Base):
-    __tablename__ = "masters"
-    master_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    full_name: Mapped[str] = mapped_column(String, nullable=True)
+class Base(DeclarativeBase):
+    pass
 
-    # Связи: Мастер владеет ролями, учениками и задачами
-    owned_roles: Mapped[List["Role"]] = relationship(back_populates="creator")
-    apprentices: Mapped[List["Apprentice"]] = relationship(back_populates="master")
-    tasks: Mapped[List["Task"]] = relationship(back_populates="teacher")
 
-class Role(Base):
-    __tablename__ = "role_names"
-    role_id: Mapped[str] = mapped_column(String, primary_key=True)
-    role_name: Mapped[str] = mapped_column(String, nullable=False)
-    # Роль теперь привязана к учителю
-    master_id: Mapped[int] = mapped_column(ForeignKey("masters.master_id"))
-    
-    creator: Mapped["MasterUser"] = relationship(back_populates="owned_roles")
-
-class User(Base): # Оставим логику User для учеников
+class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String)
-    
-    # Получение ролей через таблицу связей
-    user_roles: Mapped[List["UserRole"]] = relationship()
+    is_master: Mapped[bool] = mapped_column(Boolean, default=False)
+    master_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
 
-    def get_active_tasks(self, session):
-        """Метод получения активных задач (от новых к старым)"""
-        user_role_ids = [r.role_id for r in self.user_roles]
-        stmt = (
-            select(Task)
-            .distinct()
-            .outerjoin(TaskAccessUser)
-            .outerjoin(TaskAccessRole)
-            .where(Task.is_active == True)
-            .where(
-                (TaskAccessUser.user_id == self.user_id) | 
-                (TaskAccessRole.role_id.in_(user_role_ids))
-            )
-            .order_by(Task.created_at.desc())
-        )
-        return session.execute(stmt).scalars().all()
+    # Связь с мастером (для учеников)
+    master: Mapped[Optional["User"]] = relationship(
+        "User",
+        remote_side=[id],
+        back_populates="apprentices"
+    )
 
-class Apprentice(Base):
-    __tablename__ = "apprentices"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    master_id: Mapped[int] = mapped_column(ForeignKey("masters.master_id"))
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
-    
-    master: Mapped["MasterUser"] = relationship(back_populates="apprentices")
+    # Связь с учениками (для мастеров)
+    apprentices: Mapped[List["User"]] = relationship(
+        "User",
+        back_populates="master",
+        foreign_keys=[master_id]
+    )
+
 
 class Task(Base):
     __tablename__ = "tasks"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String)
-    description: Mapped[str] = mapped_column(String, nullable=True)
-    teacher_id: Mapped[int] = mapped_column(ForeignKey("masters.master_id"))
+    content: Mapped[str] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    master_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.token"))  # Ученик, которому назначена задача
+    able_answer: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    teacher: Mapped["MasterUser"] = relationship(back_populates="tasks")
-    images: Mapped[List["TaskImage"]] = relationship(back_populates="task")
-    answers: Mapped[List["Answer"]] = relationship(back_populates="task")
-    
-    # Связи для доступа к задаче
-    access_users: Mapped[List["TaskAccessUser"]] = relationship(back_populates="task")
-    access_roles: Mapped[List["TaskAccessRole"]] = relationship(back_populates="task")
+    # Ответы на задачу
+    answers: Mapped[List["Answer"]] = relationship(
+        "Answer",
+        back_populates="task"
+    )
 
 
 class TaskImage(Base):
     __tablename__ = "task_images"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), nullable=True)
-    answer_id: Mapped[int] = mapped_column(ForeignKey("answers.id"), nullable=True)
-    image_name: Mapped[str] = mapped_column(String)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    task_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tasks.id"), nullable=True)
+    answer_id: Mapped[Optional[int]] = mapped_column(ForeignKey("answers.id"), nullable=True)
+    image_id: Mapped[int] = mapped_column(ForeignKey("images.id"))
 
-    task: Mapped["Task"] = relationship(back_populates="images")
-    answer: Mapped["Answer"] = relationship(back_populates="images")
+
+class TaskFile(Base):
+    __tablename__ = "task_files"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
+    file_id: Mapped[int] = mapped_column(ForeignKey("files.id"))
 
 
 class Answer(Base):
     __tablename__ = "answers"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
-    text: Mapped[str] = mapped_column(String, nullable=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.token"))  # Токен ученика
+    content: Mapped[str] = mapped_column(String)
+    image_id: Mapped[Optional[int]] = mapped_column(ForeignKey("images.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
+    comment: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    comment_grade: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     task: Mapped["Task"] = relationship(back_populates="answers")
-    user: Mapped["User"] = relationship()
-    images: Mapped[List["TaskImage"]] = relationship(back_populates="answer")
 
 
-class UserRole(Base):
-    __tablename__ = "user_roles"
+class AnswerImage(Base):
+    __tablename__ = "answer_images"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    answer_id: Mapped[int] = mapped_column(ForeignKey("answers.id"))
+    image_id: Mapped[int] = mapped_column(ForeignKey("images.id"))
+
+
+class File(Base):
+    __tablename__ = "files"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
-    role_id: Mapped[str] = mapped_column(ForeignKey("role_names.role_id"))
+    path: Mapped[str] = mapped_column(String)
+    original_name: Mapped[str] = mapped_column(String)  # Оригинальное имя файла
 
-class TaskAccessUser(Base):
-    __tablename__ = "task_access_users"
+
+class Image(Base):
+    __tablename__ = "images"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
-    
-    task: Mapped["Task"] = relationship(back_populates="access_users")
-    user: Mapped["User"] = relationship()
+    path: Mapped[str] = mapped_column(String)
 
-
-class TaskAccessRole(Base):
-    __tablename__ = "task_access_roles"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
-    role_id: Mapped[str] = mapped_column(ForeignKey("role_names.role_id"))
-    
-    task: Mapped["Task"] = relationship(back_populates="access_roles")
-    role: Mapped["Role"] = relationship()
 
 def init_db():
     Base.metadata.create_all(engine)

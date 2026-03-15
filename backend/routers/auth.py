@@ -1,31 +1,39 @@
-from fastapi import HTTPException, APIRouter, Request
+from fastapi import HTTPException, APIRouter
 from pydantic import BaseModel
-from data.data import Session
-from data.data import User, MasterUser
+from data.data import Session, User
 
-
-router = APIRouter()
+router = APIRouter(
+    prefix="/auth",
+)
 
 
 class LoginSchema(BaseModel):
     token: str
 
+
 @router.post("/login")
-async def login(data: LoginSchema, request: Request):
+async def login(data: LoginSchema):
+    """Вход в аккаунт по токену."""
     with Session() as session:
-        
-        if request.client.host == "127.0.0.1" and data.token == "admin":
-            return {"status": "success", "type": "admin", "user": "admin", "id": 0}
-            
-        
-        master = session.query(MasterUser).filter(MasterUser.name == data.token).first()
-        if master:
-            return {"status": "success", "type": "master", "user": master.name, "id": master.master_id}
-        
-        
-        user = session.query(User).filter(User.user_id == data.token).first()
-        if user:
-            return {"status": "success", "type": "user", "user": user.user_id, "id": user.id}
-        
-        
-        raise HTTPException(status_code=404, detail="User not found")
+        # Ищем пользователя по токену
+        user = session.query(User).filter(User.token == data.token).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Определяем тип пользователя
+        if user.is_master:
+            user_type = "master"
+        else:
+            user_type = "student"
+
+        return {
+            "status": "success",
+            "user": {
+                "id": user.id,
+                "token": user.token,
+                "full_name": user.full_name,
+                "is_master": user.is_master,
+                "master_id": user.master_id,
+                "type": user_type
+            }
+        }

@@ -1,8 +1,12 @@
-<script setup></script>
-
 <template>
-
-  <RouterView />
+  <router-view />
 </template>
 
-<style scoped></style>
+<script setup>
+</script>
+
+<style>
+#app {
+  min-height: 100vh;
+}
+</style>
