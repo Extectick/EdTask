@@ -1,5 +1,8 @@
 from fastapi import HTTPException, APIRouter, Form
-from data.data import Session, Task, TaskImage, TaskFile, Image, File, User, Answer
+import os
+
+from data.data import Answer, AnswerImage, File, Image, Session, Task, TaskFile, TaskImage, User
+from media import delete_image
 
 router = APIRouter(
     prefix="/master/task",
@@ -26,39 +29,43 @@ async def delete(
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        # Удаляем изображения задачи
         task_images = session.query(TaskImage).filter(TaskImage.task_id == task_id).all()
-        for ti in task_images:
-            # Удаляем файл с диска
-            import os
-            img = session.query(Image).filter(Image.id == ti.image_id).first()
-            if img and img.path:
-                if os.path.exists(img.path):
-                    os.remove(img.path)
-                session.delete(img)
-        
-        # Удаляем файлы задачи
         task_files = session.query(TaskFile).filter(TaskFile.task_id == task_id).all()
+        answers = session.query(Answer).filter(Answer.task_id == task_id).all()
+
+        image_ids_to_delete = {ti.image_id for ti in task_images}
+        file_ids_to_delete = {tf.file_id for tf in task_files}
+
+        for ti in task_images:
+            session.delete(ti)
+
         for tf in task_files:
-            # Удаляем файл с диска
-            import os
-            file = session.query(File).filter(File.id == tf.file_id).first()
+            session.delete(tf)
+
+        for answer in answers:
+            if answer.image_id:
+                image_ids_to_delete.add(answer.image_id)
+
+            answer_images = session.query(AnswerImage).filter(AnswerImage.answer_id == answer.id).all()
+            for ai in answer_images:
+                image_ids_to_delete.add(ai.image_id)
+                session.delete(ai)
+            session.delete(answer)
+
+        session.flush()
+
+        for image_id in image_ids_to_delete:
+            img = session.query(Image).filter(Image.id == image_id).first()
+            if img:
+                delete_image(img.path)
+                session.delete(img)
+
+        for file_id in file_ids_to_delete:
+            file = session.query(File).filter(File.id == file_id).first()
             if file and file.path:
                 if os.path.exists(file.path):
                     os.remove(file.path)
                 session.delete(file)
-        
-        # Удаляем ответы и их изображения
-        answers = session.query(Answer).filter(Answer.task_id == task_id).all()
-        for answer in answers:
-            answer_images = session.query(TaskImage).filter(TaskImage.answer_id == answer.id).all()
-            for ai in answer_images:
-                img = session.query(Image).filter(Image.id == ai.image_id).first()
-                if img and img.path:
-                    if os.path.exists(img.path):
-                        os.remove(img.path)
-                    session.delete(img)
-            session.delete(answer)
 
         # Удаляем задачу
         session.delete(task)

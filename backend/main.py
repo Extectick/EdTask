@@ -1,13 +1,10 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from data.data import init_db
-import time
+from data.data import ensure_bootstrap_master, init_db
+from media import ensure_image_bucket
 import os
-
-init_db()
 
 app = FastAPI()
 
@@ -46,3 +43,10 @@ async def serve_spa(catchall: str):
     if catchall.startswith("api/") or catchall.startswith("data/") or catchall.startswith("docs"):
         raise HTTPException(status_code=404)
     return FileResponse(os.path.join(static_path, "index.html"))
+
+
+@app.on_event("startup")
+async def startup():
+    init_db()
+    ensure_image_bucket()
+    ensure_bootstrap_master()

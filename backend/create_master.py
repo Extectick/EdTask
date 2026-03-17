@@ -57,6 +57,7 @@ def main():
         print('  python create_master.py master123 Ivan_Petrov')
         print('  python create_master.py teacher_smith John_Smith')
         print("\nNote: Use underscores instead of spaces in names")
+        print("DATABASE_URL must point to PostgreSQL.")
         sys.exit(1)
 
     token = sys.argv[1]

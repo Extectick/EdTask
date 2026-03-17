@@ -142,10 +142,10 @@
               v-for="img in task.images"
               :key="img.id"
               class="relative cursor-pointer group"
-              @click="selectedImage = `${API_URL}/data/img/${img.image_name}`"
+              @click="selectedImage = img.image_url"
             >
               <img
-                :src="`${API_URL}/data/img/${img.image_name}`"
+                :src="img.image_url"
                 :alt="img.id"
                 class="w-full h-48 object-cover rounded-lg group-hover:opacity-75 transition"
               />
@@ -215,10 +215,10 @@
           <!-- Изображение ответа -->
           <div v-if="answer.image" class="mb-3">
             <img
-              :src="`${API_URL}/data/img/${answer.image.image_name}`"
+              :src="answer.image.image_url"
               alt="Ответ"
               class="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-75 transition"
-              @click="selectedImage = `${API_URL}/data/img/${answer.image.image_name}`"
+              @click="selectedImage = answer.image.image_url"
             />
           </div>
 

@@ -10,21 +10,43 @@
 
 ## 🚀 Быстрый старт
 
-### Разработка
+### Разработка через Docker Compose
 
 ```bash
-# Фронтенд (терминал 1)
-cd frontend
-npm install
-npm run dev
-
-# Бэкенд (терминал 2)
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload
+docker compose up --build
 ```
 
-Открой: http://127.0.0.1:8000
+Открой:
+- Frontend: http://127.0.0.1:5173
+- Backend API: http://127.0.0.1:8000
+
+---
+
+### Что поднимается
+
+- `postgres` - основная БД
+- `backend` - FastAPI, подключается к Postgres через `DATABASE_URL`
+- `frontend` - Vite dev server
+- `minio` - S3-совместимое хранилище изображений на `9000`, консоль на `9001`
+
+Картинки больше не хранятся в локальном `data/img` как основной storage: новые изображения загружаются в MinIO, а в БД сохраняется их публичный URL.
+
+### Bootstrap мастера
+
+Первый мастер создаётся автоматически при старте backend из переменных окружения в `docker-compose.yml`:
+
+```yaml
+BOOTSTRAP_MASTER_TOKEN: admin
+BOOTSTRAP_MASTER_FULL_NAME: 123
+```
+
+После первого старта используй токен `admin` для входа. Эти значения нужно сменить для своего окружения.
+
+### Ручное создание мастера
+
+```bash
+docker compose exec backend python create_master.py teacher1 "Иван Петров"
+```
 
 ---
 
@@ -53,10 +75,7 @@ xcopy /E /I /Y frontend\dist backend\static
 cd backend
 pip install -r requirements.txt
 
-# Локально
-uvicorn main:app --reload
-
-# Через ngrok (туннель)
+# DATABASE_URL должен указывать на доступный PostgreSQL
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
@@ -124,7 +143,8 @@ EdTask/
 
 **Бэкенд:**
 - FastAPI
-- SQLAlchemy (SQLite)
+- SQLAlchemy
+- PostgreSQL
 - Uvicorn
 
 ---
@@ -157,6 +177,7 @@ npm run lint     # Проверка кода
 ```bash
 uvicorn main:app --reload   # Dev режим
 uvicorn main:app --workers 4  # Production
+python create_master.py admin Admin  # Ручное создание мастера при наличии DATABASE_URL
 python -m py_compile *.py   # Проверка синтаксиса
 ```
 

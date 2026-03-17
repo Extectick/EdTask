@@ -1,38 +1,44 @@
 #!/usr/bin/env python3
-"""Проверка пользователей в БД"""
+"""Проверка пользователей в PostgreSQL."""
 
-import sqlite3
-import os
+from sqlalchemy.orm import aliased
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "base.db")
+from data.data import Session, User, init_db
 
-conn = sqlite3.connect(DB_PATH)
-cursor = conn.cursor()
 
-print("=" * 60)
-print("ПОЛЬЗОВАТЕЛИ:")
-print("=" * 60)
-cursor.execute("SELECT id, token, full_name, is_master, master_id FROM users")
-for row in cursor.fetchall():
-    print(f"ID: {row[0]}, Token: {row[1]}, Имя: {row[2]}, Мастер: {bool(row[3])}, ID мастера: {row[4]}")
+init_db()
 
-print("\n" + "=" * 60)
-print("МАСТЕРА (is_master=1):")
-print("=" * 60)
-cursor.execute("SELECT id, token, full_name FROM users WHERE is_master = 1")
-for row in cursor.fetchall():
-    print(f"ID: {row[0]}, Token: {row[1]}, Имя: {row[2]}")
+with Session() as session:
+    print("=" * 60)
+    print("ПОЛЬЗОВАТЕЛИ:")
+    print("=" * 60)
+    users = session.query(User).order_by(User.id).all()
+    for user in users:
+        print(
+            f"ID: {user.id}, Token: {user.token}, Имя: {user.full_name}, "
+            f"Мастер: {user.is_master}, ID мастера: {user.master_id}"
+        )
 
-print("\n" + "=" * 60)
-print("УЧЕНИКИ (is_master=0):")
-print("=" * 60)
-cursor.execute("""
-    SELECT u.id, u.token, u.full_name, u.master_id, m.token as master_token 
-    FROM users u 
-    LEFT JOIN users m ON u.master_id = m.id 
-    WHERE u.is_master = 0
-""")
-for row in cursor.fetchall():
-    print(f"ID: {row[0]}, Token: {row[1]}, Имя: {row[2]}, ID мастера: {row[3]}, Токен мастера: {row[4]}")
+    print("\n" + "=" * 60)
+    print("МАСТЕРА (is_master=True):")
+    print("=" * 60)
+    masters = session.query(User).filter(User.is_master.is_(True)).order_by(User.id).all()
+    for master in masters:
+        print(f"ID: {master.id}, Token: {master.token}, Имя: {master.full_name}")
 
-conn.close()
+    print("\n" + "=" * 60)
+    print("УЧЕНИКИ (is_master=False):")
+    print("=" * 60)
+    master_alias = aliased(User)
+    students = (
+        session.query(User, master_alias.token)
+        .outerjoin(master_alias, User.master_id == master_alias.id)
+        .filter(User.is_master.is_(False))
+        .order_by(User.id)
+        .all()
+    )
+    for student, master_token in students:
+        print(
+            f"ID: {student.id}, Token: {student.token}, Имя: {student.full_name}, "
+            f"ID мастера: {student.master_id}, Токен мастера: {master_token}"
+        )

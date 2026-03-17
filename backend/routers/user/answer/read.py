@@ -1,5 +1,6 @@
 from fastapi import HTTPException, APIRouter, Query
 from data.data import Session, Answer, Task, User, Image
+from media import serialize_image
 
 router = APIRouter(
     prefix="/user/answer",
@@ -29,11 +30,7 @@ async def get_answers(
                 raise HTTPException(status_code=403, detail="Not enough permissions")
 
             answer_img = session.query(Image).filter(Image.id == answer.image_id).first() if answer.image_id else None
-            
-            image_data = None
-            if answer_img and answer_img.path:
-                image_name = answer_img.path.split('/')[-1].split('\\')[-1]
-                image_data = {"id": answer_img.id, "image_name": image_name}
+            image_data = serialize_image(answer_img)
 
             return {
                 "status": "success",
@@ -57,11 +54,7 @@ async def get_answers(
             result = []
             for answer in answers:
                 answer_img = session.query(Image).filter(Image.id == answer.image_id).first() if answer.image_id else None
-                
-                image_data = None
-                if answer_img and answer_img.path:
-                    image_name = answer_img.path.split('/')[-1].split('\\')[-1]
-                    image_data = {"id": answer_img.id, "image_name": image_name}
+                image_data = serialize_image(answer_img)
                 
                 result.append({
                     "id": answer.id,
@@ -83,11 +76,7 @@ async def get_answers(
             result = []
             for answer in answers:
                 answer_img = session.query(Image).filter(Image.id == answer.image_id).first() if answer.image_id else None
-                
-                image_data = None
-                if answer_img and answer_img.path:
-                    image_name = answer_img.path.split('/')[-1].split('\\')[-1]
-                    image_data = {"id": answer_img.id, "image_name": image_name}
+                image_data = serialize_image(answer_img)
                 
                 result.append({
                     "id": answer.id,

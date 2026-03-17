@@ -92,9 +92,9 @@ python data/add_user.py user#456 "Борисов Борис" ivanov_mp
    pip install -r requirements.txt
    ```
 
-2. **Проверь путь к БД:**
-   - Файл БД: `backend/data/edu_system.db`
-   - Должен существовать после первого запуска сервера
+2. **Проверь подключение к БД:**
+   - Должен быть задан `DATABASE_URL`
+   - PostgreSQL должен быть доступен для backend
 
 3. **Закрой сервер перед запуском скрипта** (опционально):
    ```bash

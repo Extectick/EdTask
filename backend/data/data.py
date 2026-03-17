@@ -1,11 +1,19 @@
+import os
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import String, ForeignKey, Integer, Boolean, DateTime, func
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, create_engine, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
-from sqlalchemy import create_engine
 
 
-engine = create_engine("sqlite:///data/base.db", echo=False)
+def get_database_url() -> str:
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is required. Configure PostgreSQL connection before starting backend.")
+    return database_url
+
+
+engine = create_engine(get_database_url(), echo=False, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 
 
@@ -105,3 +113,27 @@ class Image(Base):
 
 def init_db():
     Base.metadata.create_all(engine)
+
+
+def ensure_bootstrap_master():
+    token = os.getenv("BOOTSTRAP_MASTER_TOKEN", "").strip()
+    full_name = os.getenv("BOOTSTRAP_MASTER_FULL_NAME", "").strip()
+
+    if not token or not full_name:
+        return None
+
+    with Session() as session:
+        existing = session.query(User).filter(User.token == token).first()
+        if existing:
+            return existing
+
+        master = User(
+            token=token,
+            full_name=full_name,
+            is_master=True,
+            master_id=None,
+        )
+        session.add(master)
+        session.commit()
+        session.refresh(master)
+        return master

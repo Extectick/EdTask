@@ -60,8 +60,8 @@ export const fileApi = {
   uploadImage(formData) {
     return apiFormData.post('/file/image', formData)
   },
-  deleteImage(imageName) {
-    return api.delete('/file/image', { data: { image_name: imageName } })
+  deleteImage(imageUrl) {
+    return api.delete('/file/image', { data: { image_url: imageUrl } })
   },
   uploadFile(formData) {
     return apiFormData.post('/file/file', formData)

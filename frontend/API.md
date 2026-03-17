@@ -189,7 +189,8 @@ image: <файл>
   "status": "success",
   "image_id": 5,
   "image_name": "uuid.jpg",
-  "file_path": "data/img/uuid.jpg",
+  "image_url": "http://localhost:9000/edtask-images/images/uuid.jpg",
+  "file_path": "http://localhost:9000/edtask-images/images/uuid.jpg",
   "size": 1024,
   "content_type": "image/jpeg"
 }
@@ -201,7 +202,7 @@ image: <файл>
 **Request:**
 ```json
 {
-  "image_name": "uuid.jpg"
+  "image_url": "http://localhost:9000/edtask-images/images/uuid.jpg"
 }
 ```
 
@@ -209,9 +210,4 @@ image: <файл>
 
 ## Статические файлы
 
-Изображения доступны по URL:
-```
-GET /data/img/{image_name}
-```
-
-Например: `http://localhost:8000/data/img/550e8400-e29b-41d4-a716-446655440000.jpg`
+Изображения доступны напрямую по `image_url`, который возвращает backend после загрузки.

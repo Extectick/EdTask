@@ -82,8 +82,10 @@ image: <файл>
 ```json
 {
   "status": "success",
+  "image_id": 5,
   "image_name": "550e8400-e29b-41d4-a716-446655440000.jpg",
-  "file_path": "data/img/550e8400-e29b-41d4-a716-446655440000.jpg",
+  "image_url": "http://localhost:9000/edtask-images/images/550e8400-e29b-41d4-a716-446655440000.jpg",
+  "file_path": "http://localhost:9000/edtask-images/images/550e8400-e29b-41d4-a716-446655440000.jpg",
   "size": 1024567,
   "content_type": "image/jpeg"
 }
@@ -93,8 +95,10 @@ image: <файл>
 | Поле | Тип | Описание |
 |------|-----|----------|
 | status | string | Статус операции |
+| image_id | integer | ID изображения в БД |
 | image_name | string | Уникальное имя файла |
-| file_path | string | Путь к файлу |
+| image_url | string | Публичный URL изображения в MinIO |
+| file_path | string | То же значение, что и `image_url` |
 | size | integer | Размер в байтах |
 | content_type | string | MIME-тип файла |
 
@@ -109,20 +113,21 @@ image: <файл>
 **Request:**
 ```json
 {
-  "image_name": "550e8400-e29b-41d4-a716-446655440000.jpg"
+  "image_url": "http://localhost:9000/edtask-images/images/550e8400-e29b-41d4-a716-446655440000.jpg"
 }
 ```
 
 **Поля запроса:**
 | Поле | Тип | Описание |
 |------|-----|----------|
-| image_name | string | Имя файла для удаления |
+| image_url | string | URL изображения для удаления |
 
 **Response (200 OK):**
 ```json
 {
   "status": "success",
-  "image_name": "550e8400-e29b-41d4-a716-446655440000.jpg"
+  "image_name": "550e8400-e29b-41d4-a716-446655440000.jpg",
+  "image_url": "http://localhost:9000/edtask-images/images/550e8400-e29b-41d4-a716-446655440000.jpg"
 }
 ```
 
@@ -782,16 +787,10 @@ GET /user/answer?master_token=master_token_abc&answer_id=15
 
 ## Статические файлы
 
-### GET /data/img/{image_name}
+### Получение изображения
 
-Получение изображения по имени.
-
-**Пример:**
-```
-GET /data/img/550e8400-e29b-41d4-a716-446655440000.jpg
-```
-
-**Response:** Файл изображения или 404 Not Found
+Новые изображения открываются напрямую по `image_url`, который возвращает backend после загрузки.
+Старые записи с локальным `data/img/...` продолжают работать через backend для обратной совместимости.
 
 ---
 

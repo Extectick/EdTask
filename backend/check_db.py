@@ -1,4 +1,6 @@
-from data.data import Session, Image, TaskImage, Task
+from data.data import Session, Image, TaskImage, Task, init_db
+
+init_db()
 
 with Session() as session:
     print("=" * 60)

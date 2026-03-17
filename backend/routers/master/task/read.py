@@ -1,5 +1,6 @@
 from fastapi import HTTPException, APIRouter, Query
 from data.data import Session, Task, TaskImage, TaskFile, Image, File, User, Answer
+from media import serialize_image
 
 router = APIRouter(
     prefix="/master/task",
@@ -41,9 +42,9 @@ async def get_tasks(
                 images = []
                 for ti in task_images:
                     img = session.query(Image).filter(Image.id == ti.image_id).first()
-                    if img and img.path:
-                        image_name = img.path.split('/')[-1].split('\\')[-1]
-                        images.append({"id": img.id, "image_name": image_name})
+                    image_data = serialize_image(img)
+                    if image_data:
+                        images.append(image_data)
 
                 # Ответы этого ученика
                 student_answers = session.query(Answer).filter(
@@ -53,9 +54,8 @@ async def get_tasks(
                     "id": answer.id,
                     "content": answer.content,
                     "created_at": str(answer.created_at) if answer.created_at else None,
-                    "image": {"id": session.query(Image).filter(Image.id == answer.image_id).first().id, 
-                              "path": session.query(Image).filter(Image.id == answer.image_id).first().path} 
-                              if answer.image_id else None,
+                    "image": serialize_image(session.query(Image).filter(Image.id == answer.image_id).first())
+                    if answer.image_id else None,
                     "comment": answer.comment,
                     "comment_grade": answer.comment_grade
                 } for answer in student_answers]
@@ -84,9 +84,9 @@ async def get_tasks(
             images = []
             for ti in task_images:
                 img = session.query(Image).filter(Image.id == ti.image_id).first()
-                if img and img.path:
-                    image_name = img.path.split('/')[-1].split('\\')[-1]
-                    images.append({"id": img.id, "image_name": image_name})
+                image_data = serialize_image(img)
+                if image_data:
+                    images.append(image_data)
 
             # Получаем файлы задачи
             task_files = session.query(TaskFile).filter(TaskFile.task_id == task.id).all()
@@ -103,11 +103,7 @@ async def get_tasks(
                 answer_img = None
                 if answer.image_id:
                     answer_img = session.query(Image).filter(Image.id == answer.image_id).first()
-                
-                image_data = None
-                if answer_img and answer_img.path:
-                    image_name = answer_img.path.split('/')[-1].split('\\')[-1]
-                    image_data = {"id": answer_img.id, "image_name": image_name}
+                image_data = serialize_image(answer_img)
                 
                 answers_data.append({
                     "id": answer.id,
@@ -198,9 +194,9 @@ async def get_tasks(
             images = []
             for ti in task_images:
                 img = session.query(Image).filter(Image.id == ti.image_id).first()
-                if img and img.path:
-                    image_name = img.path.split('/')[-1].split('\\')[-1]
-                    images.append({"id": img.id, "image_name": image_name})
+                image_data = serialize_image(img)
+                if image_data:
+                    images.append(image_data)
 
             # Получаем файлы задачи
             task_files = session.query(TaskFile).filter(TaskFile.task_id == task.id).all()
@@ -217,11 +213,7 @@ async def get_tasks(
                 answer_img = None
                 if answer.image_id:
                     answer_img = session.query(Image).filter(Image.id == answer.image_id).first()
-                
-                image_data = None
-                if answer_img and answer_img.path:
-                    image_name = answer_img.path.split('/')[-1].split('\\')[-1]
-                    image_data = {"id": answer_img.id, "image_name": image_name}
+                image_data = serialize_image(answer_img)
                 
                 answers_data.append({
                     "id": answer.id,

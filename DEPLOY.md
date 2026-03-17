@@ -11,6 +11,7 @@
 1. **Python 3.11+** для бэкенда
 2. **Ngrok аккаунт** (бесплатно)
 3. **Ngrok установлен**
+4. **MinIO/S3** для изображений
 
 ---
 
@@ -23,13 +24,26 @@ cd backend
 pip install -r requirements.txt
 ```
 
-### 2. Запуск бэкенда
+### 2. Подключение к PostgreSQL
+
+```bash
+# DATABASE_URL должен указывать на доступный PostgreSQL
+export BOOTSTRAP_MASTER_TOKEN=admin
+export BOOTSTRAP_MASTER_FULL_NAME=123
+export MINIO_ENDPOINT=127.0.0.1:9000
+export MINIO_ACCESS_KEY=minioadmin
+export MINIO_SECRET_KEY=minioadmin
+export MINIO_BUCKET=edtask-images
+export MINIO_PUBLIC_URL=http://127.0.0.1:9000
+```
+
+### 3. Запуск бэкенда
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-### 3. Запуск ngrok (в другом терминале)
+### 4. Запуск ngrok (в другом терминале)
 
 ```bash
 ngrok http 8000
@@ -98,7 +112,9 @@ xcopy /E /I /Y dist ..\backend\static
 ## 📋 Требования
 
 1. **Python 3.11+** для бэкенда
-2. **Открытый порт 8000** на сервере
+2. **PostgreSQL** для backend
+3. **MinIO/S3** для изображений
+4. **Открытый порт 8000** на сервере
 
 ---
 
@@ -149,10 +165,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
-    # Изображения
-    location /data/img/ {
-        proxy_pass http://127.0.0.1:8000/data/img/;
-    }
+    # Если MinIO опубликован отдельно, картинки фронт будет брать по MINIO_PUBLIC_URL
 }
 ```
 
