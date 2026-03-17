@@ -17,6 +17,13 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // Доступ с локальной сети
-    port: 5173
+    port: 5173,
+    allowedHosts: [
+      'hare.ge',
+      'www.hare.ge',
+      '37.233.82.200',
+      'localhost',
+      '127.0.0.1',
+    ],
   }
 })
