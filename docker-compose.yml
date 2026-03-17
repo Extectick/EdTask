@@ -44,7 +44,7 @@ services:
       DATABASE_URL: postgresql+psycopg://edtask:edtask_dev_password@postgres:5432/edtask
       BOOTSTRAP_MASTER_TOKEN: admin
       BOOTSTRAP_MASTER_FULL_NAME: 123
-      BACKEND_PUBLIC_URL: http://localhost:8000
+      BACKEND_PUBLIC_URL: http://localhost:8001
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -54,7 +54,7 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./backend:/app
     depends_on:
@@ -71,7 +71,7 @@ services:
     working_dir: /app
     command: npm run dev -- --host 0.0.0.0 --port 5173
     environment:
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: http://localhost:8001
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "5173:5173"
